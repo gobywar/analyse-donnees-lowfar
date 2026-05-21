@@ -75,12 +75,12 @@ with st.sidebar:
         (-120.0, 120.0)
     )
 
-    ymax = st.slider(
-        "y max",
-        50,
-        1000,
-        300
-    )
+    # ymax = st.slider(
+    #     "y max",
+    #     50,
+    #     1000,
+    #     300
+    # )
 
 
 # -------------------
@@ -147,6 +147,9 @@ idx_final = idx_lat[final_mask]
 density = st.sidebar.checkbox("Normalize (density)", value=False)
 fig, ax = plt.subplots(figsize=(8, 6))
 
+counts, bins = np.histogram(filtered, bins=bins, density=density)
+ymax = counts.max()
+
 ax.hist(
     RM_final,
     bins=bins,
@@ -164,10 +167,7 @@ ax.axvline(
 )
 
 ax.set_xlim(-xmax, xmax)
-if (density):
-    ax.set_ylim(0, 1)
-else:
-    ax.set_ylim(0, ymax)
+ax.set_ylim(0, ymax *1.1)
 
 ax.set_xlabel("RM")
 ax.set_ylabel("Count")
