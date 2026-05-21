@@ -18,18 +18,18 @@ st.set_page_config(
 # Data loading
 # -------------------
 
-@st.cache_data
-def load_data():
+# @st.cache_data
+# def load_data():
 
-    with fits.open("./DR3_RMGrid_v1.0.fits") as f:
-        table = Table(f[1].data)
+#     with fits.open("./DR3_RMGrid_v1.0.fits") as f:
+#         table = Table(f[1].data)
 
-    RM = table["RM"][:-1].data
-    GLAT = table["glat_pol"][:-1].data
+#     RM = table["RM"][:-1].data
+#     GLAT = table["glat_pol"][:-1].data
 
-    idx = np.arange(len(RM))
+#     idx = np.arange(len(RM))
 
-    return RM, GLAT, idx
+#     return RM, GLAT, idx
 
 
 # -------------------
@@ -87,7 +87,7 @@ with st.sidebar:
 # Plot
 # -------------------
 
-with fits.open("../../../DatasLOFAR/DR3_RMGrid_v1.0.fits") as f:
+with fits.open("./DatasLOFAR/DR3_RMGrid_v1.0.fits") as f:
     table = Table(f[1].data)
 
 RM = table["RM"][:-1].data
