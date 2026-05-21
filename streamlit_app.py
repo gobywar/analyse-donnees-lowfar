@@ -87,7 +87,7 @@ with st.sidebar:
 # Plot
 # -------------------
 
-with fits.open("./DatasLOFAR/DR3_RMGrid_v1.0.fits") as f:
+with fits.open("./DR3_RMGrid_v1.0.fits") as f:
     table = Table(f[1].data)
 
 RM = table["RM"][:-1].data
