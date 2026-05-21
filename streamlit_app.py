@@ -1,151 +1,176 @@
 import streamlit as st
-import pandas as pd
-import math
-from pathlib import Path
+import numpy as np
+import matplotlib.pyplot as plt
+from astropy.io import fits
+from astropy.table import Table
 
-# Set the title and favicon that appear in the Browser's tab bar.
+
+# -------------------
+# Config
+# -------------------
+
 st.set_page_config(
-    page_title='GDP dashboard',
-    page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
+    page_title="LOFAR RM Histograms",
+    page_icon="🌍"
 )
 
-# -----------------------------------------------------------------------------
-# Declare some useful functions.
+# -------------------
+# Data loading
+# -------------------
 
 @st.cache_data
-def get_gdp_data():
-    """Grab GDP data from a CSV file.
+def load_data():
 
-    This uses caching to avoid having to read the file every time. If we were
-    reading from an HTTP endpoint instead of a file, it's a good idea to set
-    a maximum age to the cache with the TTL argument: @st.cache_data(ttl='1d')
-    """
+    with fits.open("../../../DatasLOFAR/DR3_RMGrid_v1.0.fits") as f:
+        table = Table(f[1].data)
 
-    # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-    DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
-    raw_gdp_df = pd.read_csv(DATA_FILENAME)
+    RM = table["RM"][:-1].data
+    GLAT = table["glat_pol"][:-1].data
 
-    MIN_YEAR = 1960
-    MAX_YEAR = 2022
+    idx = np.arange(len(RM))
 
-    # The data above has columns like:
-    # - Country Name
-    # - Country Code
-    # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
-    # - GDP for 1962
-    # - ...
-    # - GDP for 2022
-    #
-    # ...but I want this instead:
-    # - Country Name
-    # - Country Code
-    # - Year
-    # - GDP
-    #
-    # So let's pivot all those year-columns into two: Year and GDP
-    gdp_df = raw_gdp_df.melt(
-        ['Country Code'],
-        [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
-        'Year',
-        'GDP',
+    return RM, GLAT, idx
+
+
+# -------------------
+# Sidebar controls
+# -------------------
+
+with st.sidebar:
+
+    st.header("Parameters")
+
+    latitude = st.slider(
+        "Latitude cut",
+        0,
+        80,
+        0
     )
 
-    # Convert years from string to integers
-    gdp_df['Year'] = pd.to_numeric(gdp_df['Year'])
+    bins = st.slider(
+        "Bins",
+        20,
+        300,
+        100
+    )
 
-    return gdp_df
+    xmax = st.slider(
+        "x range",
+        10,
+        500,
+        200
+    )
 
-gdp_df = get_gdp_data()
+    exclusion = st.slider(
+        "Exclusion interval",
+        -10.0,
+        10.0,
+        (-3.0, 1.5)
+    )
 
-# -----------------------------------------------------------------------------
-# Draw the actual page
+    inclusion = st.slider(
+        "Inclusion interval",
+        -300.0,
+        300.0,
+        (-120.0, 120.0)
+    )
 
-# Set the title that appears at the top of the page.
-'''
-# :earth_americas: GDP dashboard
+    ymax = st.slider(
+        "y max",
+        50,
+        1000,
+        300
+    )
 
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
-'''
 
-# Add some spacing
-''
-''
+# -------------------
+# Plot
+# -------------------
 
-min_value = gdp_df['Year'].min()
-max_value = gdp_df['Year'].max()
+with fits.open("../../../DatasLOFAR/DR3_RMGrid_v1.0.fits") as f:
+    table = Table(f[1].data)
 
-from_year, to_year = st.slider(
-    'Which years are you interested in?',
-    min_value=min_value,
-    max_value=max_value,
-    value=[min_value, max_value])
+RM = table["RM"][:-1].data
+GLAT = table["glat_pol"][:-1].data
 
-countries = gdp_df['Country Code'].unique()
+idx = np.arange(len(RM))
 
-if not len(countries):
-    st.warning("Select at least one country")
+mask_lat = (GLAT >= -latitude) | (GLAT <= latitude)
 
-selected_countries = st.multiselect(
-    'Which countries would you like to view?',
-    countries,
-    ['DEU', 'FRA', 'GBR', 'BRA', 'MEX', 'JPN'])
+RM_lat = RM[mask_lat]
+idx_lat = idx[mask_lat]
 
-''
-''
-''
+mask_exclusion = (RM_lat <= exclusion[0]) | (RM_lat >= exclusion[1])
+mask_inclusion = (RM_lat >= inclusion[0]) & (RM_lat <= inclusion[1])
+final_mask = mask_exclusion & mask_inclusion
 
-# Filter the data
-filtered_gdp_df = gdp_df[
-    (gdp_df['Country Code'].isin(selected_countries))
-    & (gdp_df['Year'] <= to_year)
-    & (from_year <= gdp_df['Year'])
-]
+RM_excluded_low = RM_lat[~mask_exclusion]
+idx_excluded_low = idx_lat[~mask_exclusion]
+excluded_low__table = table[idx_excluded_low]
+excluded_low__table.write("excluded_low.fits", overwrite=True)
 
-st.header('GDP over time', divider='gray')
 
-''
+RM_excluded_high = RM_lat[~mask_inclusion]
+idx_excluded_high = idx_lat[~mask_inclusion]
+excluded_high__table = table[idx_excluded_low]
+excluded_high__table.write("excluded_high.fits", overwrite=True)
 
-st.line_chart(
-    filtered_gdp_df,
-    x='Year',
-    y='GDP',
-    color='Country Code',
+with st.container():
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("Low RM exclusion")
+        st.metric(
+            label="Sources à faible RM exclues ",
+            value=len(RM_excluded_low),
+            delta=f"{len(RM_excluded_low)/len(RM_lat):.1%}"
+        )
+        with open("excluded_low.fits", "rb") as f:
+            st.download_button("Download FITS file of low RM excluded sources", f, file_name="excluded_low.fits")
+
+    with col2:
+        st.subheader("High RM exclusion")
+        st.metric(
+            label="Sources à fort RM exclues ",
+            value=len(RM_excluded_high),
+            delta=f"{len(RM_excluded_high)/len(RM_lat):.1%}"
+        )
+        with open("excluded_high.fits", "rb") as f:
+            st.download_button("Download FITS file of high RM excluded sources", f, file_name="excluded_high.fits")
+
+
+
+
+RM_final = RM_lat[final_mask]
+idx_final = idx_lat[final_mask]
+
+
+fig, ax = plt.subplots(figsize=(8, 6))
+
+ax.hist(
+    RM_final,
+    bins=bins
 )
 
-''
-''
+ax.axvline(
+    exclusion[0],
+    linestyle="--"
+)
 
+ax.axvline(
+    exclusion[1],
+    linestyle="--"
+)
 
-first_year = gdp_df[gdp_df['Year'] == from_year]
-last_year = gdp_df[gdp_df['Year'] == to_year]
+ax.set_xlim(-xmax, xmax)
+ax.set_ylim(0, ymax)
 
-st.header(f'GDP in {to_year}', divider='gray')
+ax.set_xlabel("RM")
+ax.set_ylabel("Count")
 
-''
+st.pyplot(fig)
 
-cols = st.columns(4)
-
-for i, country in enumerate(selected_countries):
-    col = cols[i % len(cols)]
-
-    with col:
-        first_gdp = first_year[first_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-        last_gdp = last_year[last_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-
-        if math.isnan(first_gdp):
-            growth = 'n/a'
-            delta_color = 'off'
-        else:
-            growth = f'{last_gdp / first_gdp:,.2f}x'
-            delta_color = 'normal'
-
-        st.metric(
-            label=f'{country} GDP',
-            value=f'{last_gdp:,.0f}B',
-            delta=growth,
-            delta_color=delta_color
-        )
+st.metric(
+    "Selected sources",
+    len(RM_final)
+)
