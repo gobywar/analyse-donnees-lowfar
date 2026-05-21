@@ -147,7 +147,7 @@ idx_final = idx_lat[final_mask]
 density = st.sidebar.checkbox("Normalize (density)", value=False)
 fig, ax = plt.subplots(figsize=(8, 6))
 
-counts, bins = np.histogram(filtered, bins=bins, density=density)
+counts, bins = np.histogram(RM_final, bins=bins, density=density)
 ymax = counts.max()
 
 ax.hist(
