@@ -164,7 +164,10 @@ ax.axvline(
 )
 
 ax.set_xlim(-xmax, xmax)
-ax.set_ylim(0, ymax)
+if (density):
+    ax.set_ylim(0, 1)
+else:
+    ax.set_ylim(0, ymax)
 
 ax.set_xlabel("RM")
 ax.set_ylabel("Count")
