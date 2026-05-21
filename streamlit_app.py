@@ -121,7 +121,7 @@ with st.container():
     with col1:
         st.subheader("Low RM exclusion")
         st.metric(
-            label="Sources à faible RM exclues ",
+            #label="Sources à faible RM exclues ",
             value=len(RM_excluded_low),
             delta=f"{len(RM_excluded_low)/len(RM_lat):.1%}"
         )
@@ -131,7 +131,7 @@ with st.container():
     with col2:
         st.subheader("High RM exclusion")
         st.metric(
-            label="Sources à fort RM exclues ",
+            #label="Sources à fort RM exclues ",
             value=len(RM_excluded_high),
             delta=f"{len(RM_excluded_high)/len(RM_lat):.1%}"
         )
