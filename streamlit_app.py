@@ -144,12 +144,13 @@ with st.container():
 RM_final = RM_lat[final_mask]
 idx_final = idx_lat[final_mask]
 
-
+density = st.sidebar.checkbox("Normalize (density)", value=False)
 fig, ax = plt.subplots(figsize=(8, 6))
 
 ax.hist(
     RM_final,
-    bins=bins
+    bins=bins,
+    density = density
 )
 
 ax.axvline(
