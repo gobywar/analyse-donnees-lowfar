@@ -149,8 +149,7 @@ fig, ax = plt.subplots(figsize=(8, 6))
 
 ax.hist(
     RM_final,
-    bins=bins,
-    density = True
+    bins=bins
 )
 
 ax.axvline(
