@@ -95,7 +95,7 @@ GLAT = table["glat_pol"][:-1].data
 
 idx = np.arange(len(RM))
 
-mask_lat = (GLAT >= -latitude) | (GLAT <= latitude)
+mask_lat = (GLAT >= latitude) | (GLAT <= -latitude)
 
 RM_lat = RM[mask_lat]
 idx_lat = idx[mask_lat]
