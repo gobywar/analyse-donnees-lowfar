@@ -21,7 +21,7 @@ st.set_page_config(
 @st.cache_data
 def load_data():
 
-    with fits.open("../../../DatasLOFAR/DR3_RMGrid_v1.0.fits") as f:
+    with fits.open("./DR3_RMGrid_v1.0.fits") as f:
         table = Table(f[1].data)
 
     RM = table["RM"][:-1].data
